@@ -6,7 +6,7 @@ from django.utils import timezone
 # Create your models here.
 
 class Payment(models.Model):
-    short = models.CharField(max_length=10, unique= True)
+    short = models.CharField(max_length=10)
     name = models.CharField(max_length=20)
 
     # Metadata
@@ -38,10 +38,6 @@ class Store(models.Model):
         """String for representing the MyModelName object (in Admin site etc.)."""
         return self.name
 
-    def display_payment_method(self):
-        return ';'.join(payment.name for payment in self.payment.all())
-
-    display_payment_method.short_description = 'Payment'
 
 class Users(models.Model):
     # Fields
@@ -51,8 +47,8 @@ class Users(models.Model):
     address = models.TextField(blank= True, null= True)
     birthday = models.DateTimeField(blank= True, null= True)
     followdate = models.DateTimeField(default=timezone.now)
-    mambercard = models.CharField(max_length= 25, blank= True, null= True)
-    einvoice = models.CharField(max_length= 25, blank= True, null= True)
+    mambercard = models.CharField(blank= True, null= True)
+    einvoice = models.CharField(blank= True, null= True)
 
     # Metadata
     class Meta:
@@ -64,7 +60,7 @@ class Users(models.Model):
         return self.name
 
 
-class Category(models.Model):
+class ProdGroups(models.Model):
     # Fields
     code = models.CharField(max_length=50, unique=True, primary_key=True)
     name = models.CharField(max_length=25)
@@ -101,11 +97,10 @@ class Products(models.Model):
     name = models.CharField(max_length=20)
     price = models.PositiveIntegerField()
     discount = models.PositiveIntegerField(blank= True, null= True)
-    category = models.ForeignKey(Category,related_name='category', to_field='code',on_delete=models.CASCADE)
+    group = models.ForeignKey(ProdGroups,related_name='group', to_field='code',on_delete=models.CASCADE)
     comments = models.TextField(blank= True, null= True)
-    image = models.ImageField(null= True)
     state = models.BooleanField(default=False)
-    enableingredients = models.ManyToManyField(Ingredients, blank=True)
+    enableingredients = models.ManyToManyField(Ingredients, related_name='enableingredients', to_field='code', on_delete=models.CASCADE, blank= True, null= True)
 
     # Metadata
     class Meta:
@@ -163,13 +158,61 @@ class Coupon(models.Model):
     discount_amount = models.FloatField(blank=True, null= True)
     miniconsump = models.FloatField(blank=True, null= True)
     used = models.BooleanField(default=False)
-    duedate = models.DateTimeField(default = date.today() + timedelta(90))
+    duedate = models.DateTimeField(delault = date.today + timedelta(90))
 
     def __str__(self):
         return self.code
 
-class OrderItems(models.Model):
+
+class Order(models.Model):
+    PickupOptions = (('Pickup', '自取'), ('Delivery', '外送'))
+    OrderStatusOptions = (('ordering', '訂購中'), ('sending', '下單中'), ('preparing','接單準備中'), ('ready', '準備就緒'), ('delivering', '外送中'), ('finished', '訂單完成'))
+    InvoiceOption = (('P', '實體發票'), ('M', '會員載具'), ('E', '手機載具'), ('D', '愛心捐贈'))
+    
     # Fields
+    ordernumber = models.CharField(max_length=50, unique=True, primary_key=True)
+    orderer = models.ForeignKey(Users, on_delete= models.CASCADE, to_field='lineid', related_name='orderer')
+    paymethod = models.ForeignKey(Payment, on_delete= models.CASCADE, to_field='short', blank= True, null= True, related_name='paymethod')
+    pickupmethod = models.CharField(max_length=20, choices=PickupOptions, blank= True, null= True)
+    status = models.CharField(max_length= 20, choices=OrderStatusOptions, default='ordering')
+    paystate = models.BooleanField(default=False)
+    receiver = models.CharField(max_length=20, blank= True, null= True)
+    receiverphone = models.CharField(max_length=20, blank= True, null= True)
+    receiveraddress = models.TextField(blank= True, null= True)
+    invoice = models.CharField(max_length=1, choices=InvoiceOption, default='P')
+    groupbuy = models.CharField(max_length=20, unique = True, blank=True, null = True)
+    voucheruse= models.ForeignKey(Coupon, on_delete= models.CASCADE, to_field='code', blank= True, null= True, related_name='voucheruse')
+
+    # Metadata
+    class Meta:
+        ordering = ['ordernumber']
+
+    # Methods
+    def __str__(self):
+        """String for representing the MyModelName object (in Admin site etc.)."""
+        return self.ordernumber
+
+class GroupBuyList(models.Model):
+    # Fields
+    listnumber = models.CharField(max_length=50, unique=True, primary_key=True)
+    member = models.ForeignKey(Users, on_delete= models.CASCADE, to_field='lineid', related_name='member')
+    groupbuynmber = models.ForeignKey(Order, to_field='groupbuy')
+    message = models.TextField(blank= True, null= True)
+    voucheruse= models.ForeignKey(Coupon, on_delete= models.CASCADE, to_field='code', blank= True, null= True, related_name='voucheruse')
+
+    # Metadata
+    class Meta:
+        ordering = ['listnumber']
+
+    # Methods
+    def __str__(self):
+        """String for representing the MyModelName object (in Admin site etc.)."""
+        return self.listnumber
+
+class ItemsList(models.Model):
+    # Fields
+    ordernumber = models.ForeignKey(Order, on_delete=models.CASCADE, blank= True, null= True)
+    listnumber = models.ForeignKey(GroupBuyList, on_delete=models.CASCADE, blank= True, null= True)
     item = models.ForeignKey(Products, on_delete=models.CASCADE)
     addition = models.TextField(blank= True, null= True)
     quantity = models.IntegerField(default=1)
@@ -192,93 +235,3 @@ class OrderItems(models.Model):
         if self.item.discount:
             return self.get_total_discount_item_price()
         return self.get_total_item_price()
-
-class Grouping(models.Model):
-    # Fields
-    ref_code = models.CharField(max_length=50, unique=True, primary_key=True)
-    user = models.ForeignKey(Users, on_delete= models.CASCADE, to_field='lineid', related_name='g_user')
-    items = models.ManyToManyField(OrderItems)
-    message = models.TextField(blank= True, null= True)
-    coupon= models.ForeignKey(Coupon, on_delete= models.SET_NULL, to_field='code', blank= True, null= True, related_name='g_coupon')
-
-    # Metadata
-    class Meta:
-        ordering = ['ref_code']
-
-    # Methods
-    def __str__(self):
-        """String for representing the MyModelName object (in Admin site etc.)."""
-        return self.ref_code
-
-    def get_total_quantity(self):
-        quantity = 0
-        for order_item in self.items.all():
-            quantity += order_item.quantity
-        return quantity 
-
-    def get_total_amount(self):
-        total = 0
-        diff_4_coupon = 0
-        for order_item in self.items.all():
-            total += order_item.get_final_price()
-        if self.coupon:
-            if total >= self.coupon.miniconsump:
-                total -= self.coupon.discount_amount
-            else:
-                diff_4_coupon = self.coupon.miniconsump - total
-        return total, diff_4_coupon
-
-class Order(models.Model):
-    PickupOptions = (('Pickup', '自取'), ('Delivery', '外送'))
-    OrderStatusOptions = (('ordering', '訂購中'), ('sending', '下單中'), ('preparing','接單準備中'), ('ready', '準備就緒'), ('delivering', '外送中'), ('finished', '訂單完成'))
-    InvoiceOption = (('P', '實體發票'), ('M', '會員載具'), ('E', '手機載具'), ('D', '愛心捐贈'))
-    
-    # Fields
-    ref_code = models.CharField(max_length=50, unique=True, primary_key=True)
-    user = models.ForeignKey(Users, on_delete= models.CASCADE, to_field='lineid', related_name='o_user')
-    items = models.ManyToManyField(OrderItems)
-    paymethod = models.ForeignKey(Payment, on_delete= models.SET_NULL, to_field='short', blank= True, null= True, related_name='paymethod')
-    pickupmethod = models.CharField(max_length=20, choices=PickupOptions, blank= True, null= True)
-    status = models.CharField(max_length= 20, choices=OrderStatusOptions, default='ordering')
-    paystate = models.BooleanField(default=False)
-    receiver = models.CharField(max_length=20, blank= True, null= True)
-    receiverphone = models.CharField(max_length=20, blank= True, null= True)
-    receiveraddress = models.TextField(blank= True, null= True)
-    invoice = models.CharField(max_length=1, choices=InvoiceOption, default='P')
-    isgrouping = models.BooleanField(default=False)
-    groupmamber = models.ManyToManyField(Grouping)
-    coupon= models.ForeignKey(Coupon, on_delete= models.SET_NULL, to_field='code', blank= True, null= True, related_name='o_coupon')
-
-    # Metadata
-    class Meta:
-        ordering = ['ref_code']
-
-    # Methods
-    def __str__(self):
-        """String for representing the MyModelName object (in Admin site etc.)."""
-        return self.ref_code
-
-    def get_total_quantity(self):
-        quantity = 0
-        for order_item in self.items.all():
-            quantity += order_item.quantity
-        if self.isgrouping:
-            for mamber in self.groupmamber.all():
-                quantity += mamber.get_total_quantity()
-        return quantity 
-
-    def get_total_amount(self):
-        total = 0
-        for order_item in self.items.all():
-            total += order_item.get_final_price()
-        if self.isgrouping:
-            for mamber in self.groupmamber.all():
-                total_4_mamber, _ = mamber.get_total_amount()
-                total+= total_4_mamber
-        diff_4_coupon = 0
-        if self.coupon:
-            if total >= self.coupon.miniconsump:
-                total -= self.coupon.discount_amount
-            else:
-                diff_4_coupon = self.coupon.miniconsump - total
-        return total, diff_4_coupon
