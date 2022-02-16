@@ -49,7 +49,7 @@ class Users(models.Model):
     name = models.CharField(max_length=25)
     phone = models.CharField(max_length=20, blank= True, null= True)
     address = models.TextField(blank= True, null= True)
-    birthday = models.DateTimeField(blank= True, null= True)
+    birthday = models.DateField(blank= True, null= True)
     followdate = models.DateTimeField(default=timezone.now)
     mambercard = models.CharField(max_length= 25, blank= True, null= True)
     einvoice = models.CharField(max_length= 25, blank= True, null= True)
@@ -79,12 +79,12 @@ class Category(models.Model):
         """String for representing the MyModelName object (in Admin site etc.)."""
         return self.name
 
-class Ingredients(models.Model):
+class Options(models.Model):
     # Fields
     code = models.CharField(max_length=50, unique=True, primary_key=True)
     name = models.CharField(max_length=20)
+    type = models.CharField(max_length=20)
     price = models.PositiveIntegerField()
-    options = models.TextField(blank= True, null= True , help_text='input options, separated by [,]')
 
     # Metadata
     class Meta:
@@ -93,19 +93,19 @@ class Ingredients(models.Model):
     # Methods
     def __str__(self):
         """String for representing the MyModelName object (in Admin site etc.)."""
-        return self.name
+        return ":".join(self.type, self.name)
 
 class Products(models.Model):
     # Fields
     code = models.CharField(max_length=50, unique=True, primary_key=True)
     name = models.CharField(max_length=20)
     price = models.PositiveIntegerField()
-    discount = models.PositiveIntegerField(blank= True, null= True)
+    discount = models.PositiveIntegerField()
     category = models.ForeignKey(Category,related_name='category', to_field='code',on_delete=models.CASCADE)
     comments = models.TextField(blank= True, null= True)
     image = models.ImageField(null= True)
     state = models.BooleanField(default=False)
-    enableingredients = models.ManyToManyField(Ingredients, blank=True)
+    enableoptions = models.ManyToManyField(Options, blank=True)
 
     # Metadata
     class Meta:
@@ -163,7 +163,7 @@ class Coupon(models.Model):
     discount_amount = models.FloatField(blank=True, null= True)
     miniconsump = models.FloatField(blank=True, null= True)
     used = models.BooleanField(default=False)
-    duedate = models.DateTimeField(default = date.today() + timedelta(90))
+    duedate = models.DateField(default = date.today() + timedelta(90))
 
     def __str__(self):
         return self.code
@@ -171,7 +171,7 @@ class Coupon(models.Model):
 class OrderItems(models.Model):
     # Fields
     item = models.ForeignKey(Products, on_delete=models.CASCADE)
-    addition = models.TextField(blank= True, null= True)
+    addition = models.ManyToManyField(Options)
     quantity = models.IntegerField(default=1)
 
     # Methods
@@ -180,10 +180,16 @@ class OrderItems(models.Model):
         return f"{self.quantity} of {self.item.name}"
 
     def get_total_item_price(self):
-        return self.quantity * self.item.price
+        total = self.quantity * self.item.price
+        for add in self.addition:
+            total + add.price
+        return total
 
     def get_total_discount_item_price(self):
-        return self.quantity * self.item.discount
+        total = self.quantity * self.item.discount
+        for add in self.addition:
+            total + add.price
+        return total
 
     def get_amount_saved(self):
         return self.get_total_item_price() - self.get_total_discount_item_price()
@@ -192,6 +198,11 @@ class OrderItems(models.Model):
         if self.item.discount:
             return self.get_total_discount_item_price()
         return self.get_total_item_price()
+
+    def display_addtions(self):
+        return '/'.join(add.name for add in self.addition.all())
+
+    display_addtions.short_description = 'Additions'
 
 class Grouping(models.Model):
     # Fields

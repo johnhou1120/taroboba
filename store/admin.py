@@ -18,9 +18,9 @@ class UsersAdmin(admin.ModelAdmin):
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('code', 'name')
 
-@admin.register(Ingredients)
-class IngredientsAdmin(admin.ModelAdmin):
-    list_display = ('code', 'name', 'price')
+@admin.register(Options)
+class OptionsAdmin(admin.ModelAdmin):
+    list_display = ('code', 'name', 'type', 'price')
 
 @admin.register(Products)
 class ProductsAdmin(admin.ModelAdmin):
@@ -43,7 +43,7 @@ class CouponAdmin(admin.ModelAdmin):
 
 @admin.register(OrderItems)
 class OrderItemsAdmin(admin.ModelAdmin):
-    list_display = ('item', 'quantity', 'addition')
+    list_display = ('__str__', 'display_addtions')
 
 @admin.register(Grouping)
 class GroupingAdmin(admin.ModelAdmin):
