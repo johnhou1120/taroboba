@@ -1,0 +1,202 @@
+@charset "UTF-8";
+body
+{
+    background-color: wheat;
+    margin: 0;
+    padding: 0;
+}
+
+.non-padding
+{
+    padding: 0;    
+}
+
+.non-margin
+{
+    margin: 0; 
+}
+
+.Prelative
+{
+    position: relative;
+}
+
+.Pabsolute
+{
+    position:absolute;
+}
+
+.outer-container{
+	position: relative;
+	overflow: hidden;
+    height: 100%;
+}
+
+.inner-container{
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: -17px;
+	bottom: 0;
+	overflow-y:scroll;
+}
+
+/*headerbar*/
+.headerbar
+{
+    background-color: mediumpurple;
+}
+
+.logo
+{
+    height: 3rem;
+    width: auto; 
+}
+
+/*toolbar*/
+.toolbar
+{
+    background-color: mediumpurple;
+}
+
+.tool-container
+{
+    max-width: 1000px;
+}
+
+.tool-item-icon
+{
+    height: 3rem;
+    width: 3rem;
+    margin:0px auto;
+}
+
+.tool-item-icon img
+{
+    height: 3rem;
+    width: 3rem; 
+}
+
+/*base*/
+.maincontent
+{
+    margin: 4rem auto;
+    max-width:1000px;
+}
+
+footer p
+{
+    text-align: center;
+}
+
+/*menu*/
+.ad-slide
+{
+    height: auto;
+}
+
+.store-slide
+{
+    height: 250px;
+    background-color: whitesmoke;
+}
+
+.store-logo
+{
+    margin-top: 10px;  
+}
+
+.store-name
+{
+    margin: 10px 0;
+}
+
+.store-data-list
+{
+    list-style-type: none;
+    margin-left: -2rem ;
+}
+
+.menu-sub-toolbar
+{
+    width: 100%;
+    bottom: 0;
+    left: 0;
+}
+
+.menu-func-btn
+{   
+    text-align: center;
+}
+
+.menu-func-btn img
+{
+    height: 3rem;
+    width: 3rem; 
+}
+
+.groups
+{
+    border-radius: 10px; 
+    background-color: aqua;  
+}
+
+.group-title
+{
+    padding: 10px;
+}
+
+.menu-ul
+{
+    list-style-type: none;
+    margin-left: -2rem ;
+}
+
+.menu-ul-div
+{
+    height: 4rem;
+    width: 100%;
+    padding: 0.5rem;
+    border-bottom-style: dashed; 
+    border-width: 1px;
+    border-color: black;
+}
+
+.menu-ul-div-last
+{
+    height: 4rem;
+    width: 100%;
+    padding: 0.5rem;
+    border-bottom-style: none; 
+}
+
+.product-icon
+{
+    text-align: center;
+}
+.product-icon img
+{
+    height: 3rem;
+    width: 3rem; 
+}
+
+.product-name-box
+{
+    height:100%;
+}
+
+.product-name 
+{
+    text-align: left;
+}
+
+.product-state
+{
+    text-align: left;
+}
+
+.product-price
+{
+    text-align: right;
+}
+  
